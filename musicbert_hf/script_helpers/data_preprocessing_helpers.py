@@ -20,9 +20,6 @@ class Config:
 
     def __post_init__(self):
         if self.vocabs is None:
-            # TODO: (Malcolm 2025-04-18) why this assertion? Can I remove it? Shouldn't
-            #     we be able to generate vocabs from the data?
-            # assert self.vocab_dir is not None
             self.vocabs = {}
         if "events" not in self.vocabs:
             self.vocabs["events"] = os.path.join(

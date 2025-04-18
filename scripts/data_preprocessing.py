@@ -86,11 +86,7 @@ def main(config: Config):
 
     for features_to_concat in config.concat_features:
         concatted_feature = "_".join(features_to_concat)
-        # TODO: (Malcolm 2025-04-18) remove if finished implementing
-        # if concatted_feature not in config.vocabs:
-        #     raise NotImplementedError(
-        #         f"Concatenated feature {concatted_feature} not in vocabs"
-        #     )
+
         vocab_path = config.vocabs.get(concatted_feature, None)
         save_path = (
             None
