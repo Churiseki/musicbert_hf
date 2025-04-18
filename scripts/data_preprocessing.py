@@ -20,6 +20,12 @@ The config file can have the following fields:
 - `concat_features`: a list of lists of features to concatenate into a single feature.
   For example, you could combine "key_pc" and "mode" into a single feature "key_pc_mode"
 
+Note that if there are no vocab files specified, the script will infer vocabularies
+from the data and save them to the output base folder with the basename
+`vocab_[feature]`. If you are using an existing model, however, you should specify
+the vocabulary files to ensure that their items are listed in the same order and so
+will lead to the same mapping from tokens to indices.
+
 There is an additional field `feature_must_divide_by` only used to validate the octuple
 input, which shouldn't generally be modified.
 
@@ -36,6 +42,7 @@ that you want to predict. For example, `key` or `chord_quality`.
 
 import argparse
 import logging
+import os
 import pdb
 import sys
 import traceback
@@ -61,10 +68,17 @@ def main(config: Config):
     all_itos = {}
     all_stoi = {}
     for feature in config.features:
+        vocab_path = config.vocabs.get(feature, None)
+        save_path = (
+            None
+            if vocab_path
+            else os.path.join(config.output_base_folder, f"vocab_{feature}")
+        )
         itos, stoi = handle_vocab(
             csv_folder=config.train_input_folder,
             feature=feature,
-            path=config.vocabs.get(feature, None),
+            path=vocab_path,
+            save_path=save_path,
         )
 
         all_itos[feature] = itos
@@ -72,12 +86,22 @@ def main(config: Config):
 
     for features_to_concat in config.concat_features:
         concatted_feature = "_".join(features_to_concat)
-        if concatted_feature not in config.vocabs:
-            raise NotImplementedError(
-                f"Concatenated feature {concatted_feature} not in vocabs"
-            )
+        # TODO: (Malcolm 2025-04-18) remove if finished implementing
+        # if concatted_feature not in config.vocabs:
+        #     raise NotImplementedError(
+        #         f"Concatenated feature {concatted_feature} not in vocabs"
+        #     )
+        vocab_path = config.vocabs.get(concatted_feature, None)
+        save_path = (
+            None
+            if vocab_path
+            else os.path.join(config.output_base_folder, f"vocab_{concatted_feature}")
+        )
         itos, stoi = handle_vocab(
-            path=config.vocabs[concatted_feature],
+            csv_folder=config.train_input_folder,
+            features_to_concat=features_to_concat,
+            path=vocab_path,
+            save_path=save_path,
         )
         all_itos[concatted_feature] = itos
         all_stoi[concatted_feature] = stoi

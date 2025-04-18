@@ -15,8 +15,10 @@ from tqdm import tqdm
 
 def get_vocab(
     csv_folder=None,
-    feature=None,
+    feature: str | None = None,
+    features_to_concat: list[str] | None = None,
     path: str | None = None,
+    save_path: str | None = None,
     sort: Literal["lexical", "frequency", "none"] = "lexical",
     specials: Iterable[str] = ("<unk>", "<pad>", "<s>", "</s>"),
 ):
@@ -54,7 +56,9 @@ def get_vocab(
             with open(path, "r") as f:
                 return [line.strip() for line in f.readlines()]
 
-    assert feature is not None and csv_folder is not None
+    assert (
+        feature is not None or features_to_concat is not None
+    ) and csv_folder is not None
 
     logging.info(f"Inferring {feature} vocab from {csv_folder}")
     csv_files = glob.glob(os.path.join(csv_folder, "*.csv"))
@@ -62,6 +66,9 @@ def get_vocab(
     # for csv_file in csv_files:
     for csv_file in tqdm(csv_files, total=len(csv_files)):
         df = pd.read_csv(csv_file)
+        if features_to_concat is not None:
+            feature = "_".join(features_to_concat)
+            df[feature] = df[feature].str.join("")
         for _, row in df.iterrows():
             unique_tokens.update(row[feature].split())
 
@@ -78,19 +85,28 @@ def get_vocab(
         )
 
     vocab = list(specials) + unique_tokens
-    if path is not None:
-        with open(path, "w") as f:
-            if path.endswith(".json"):
+
+    if save_path is not None:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        with open(save_path, "w") as f:
+            if save_path.endswith(".json"):
                 json.dump(vocab, f)
             else:
                 for token in vocab:
                     f.write(token + "\n")
+        logging.info(f"Saved vocab to {save_path}")
 
     return vocab
 
 
-def handle_vocab(csv_folder=None, feature=None, path=None):
-    itos = get_vocab(csv_folder, feature, path)
+def handle_vocab(
+    csv_folder=None,
+    feature=None,
+    features_to_concat=None,
+    path=None,
+    save_path=None,
+):
+    itos = get_vocab(csv_folder, feature, features_to_concat, path, save_path)
     stoi = {token: i for i, token in enumerate(itos)}
 
     # pad is -100 in huggingface, 1 in musicbert
