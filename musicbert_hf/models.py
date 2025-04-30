@@ -38,6 +38,7 @@ class CompoundEmbeddings(BertEmbeddings):
 
     def __init__(self, config, *, compound_ratio: int = 8, upsample: bool = True):
         super().__init__(config)
+        self.fairseq_position_embeddings = config.fairseq_position_embeddings
         self.compound_ratio = compound_ratio
         self.downsampling = nn.Sequential(
             nn.Linear(config.hidden_size * compound_ratio, config.hidden_size)
@@ -94,7 +95,10 @@ class CompoundEmbeddings(BertEmbeddings):
         #   ids to padding tokens but I don't think this should matter since we
         #   ignore them later in any case.
         # (Malcolm 2024-03-15) fairseq begins position ids from 2
-        position_ids = self.position_ids[:, 2 : seq + 2]
+        if self.fairseq_position_embeddings:
+            position_ids = self.position_ids[:, 2 : seq + 2]
+        else:
+            position_ids = self.position_ids[:, :seq]
 
         assert inputs_embeds is None, (
             "inputs_embeds are not supported for compound mode"
@@ -201,10 +205,19 @@ class MusicBertEncoder(BertModel):
 
 
 class MusicBertConfig(BertConfig):
-    # Just make sure tie_word_embeddings is False by default since it
-    #   is not implemented for MusicBert
-    def __init__(self, *args, tie_word_embeddings=False, **kwargs):
+    def __init__(
+        self,
+        *args,
+        tie_word_embeddings=False,
+        fairseq_position_embeddings=False,
+        **kwargs,
+    ):
+        # Make sure tie_word_embeddings is False by default since it
+        #   is not implemented for MusicBert
         super().__init__(*args, tie_word_embeddings=False, **kwargs)
+        # Fairseq position embeddings begin at 2, so we need to offset the indexing
+        #   of the position ids by 2.
+        self.fairseq_position_embeddings = fairseq_position_embeddings
 
 
 @add_start_docstrings(

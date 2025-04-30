@@ -59,6 +59,7 @@ def _load_from_checkpoint(
         max_position_embeddings=max_positions + 2,
         tie_word_embeddings=False,
         pad_token_id=padding_idx,
+        fairseq_position_embeddings=True,
         **config_kwargs,
     )
 
