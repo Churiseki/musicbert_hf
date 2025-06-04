@@ -27,6 +27,12 @@ Make sure you are using Python 3.11, then install all required packages:
 ```bash
 pip install -r requirements.txt
 ```
+Step 3-0: Download the checkpoint:
+https://drive.google.com/file/d/12B_Mhl3OS2z7DREEmXeG9nX1Nq-Tl8P4/view?usp=share_link
+
+and put it in the same file as multi_ex.py
+
+
 Step 3: Extract Embeddings
 Run the following script to process the MIDI files and extract embeddings:
 ```bash
